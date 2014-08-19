@@ -1,0 +1,40 @@
+.flickrrow {
+	text-align: center;
+	background-color: #000000;
+	width: 100%;
+	padding: 5px 5px 5px 5px;
+}
+
+.flickrimg {
+	text-align: center;
+	background-color: #000000;
+	
+	padding: 12px 10px 5px 10px;
+	float: left;
+}
+
+.flickrtitle {
+	font-size: 1.2em;
+	padding: 5px 0 0px 0;
+	text-align: left;
+	color: #fff;
+}
+
+.flickrcredit {
+	font-size: 0.7em;
+	text-align: left;
+	color: #666;
+}
+.flickrcredit a {
+	color: #666;
+}
+
+
+.flickrdesc {
+	font-size: 0.75em;
+	padding: 5px 15px 5px 5px;
+	text-align: left;
+	color: #fff;
+
+}
+
