@@ -35,6 +35,7 @@ $api = new Phlickr_Api(FLICKR_API_KEY, FLICKR_API_SECRET, FLICKR_API_TOKEN);
 
 $response = $api->executeMethod('flickr.photos.licenses.getInfo', array());
 $licenses_xml = simplexml_load_string($response);
+# print_r ( $licenses_xml );
 
 $licenses_array = array();
 
@@ -48,6 +49,8 @@ foreach ($licenses_xml->licenses->{'license'} as $license ) {
 	if ( preg_match ( '/creativecommons/', $licenses_array[$id]['url']  )  ) {
 		$a = explode  ( '/',  $licenses_array[$id]['url'] );
 		$licenses_array[$id]['cc'] = '<a href="' . $licenses_array[$id]['url'] . '">CC ' .  strtoupper ( $a[4] . " " . $a[5] ) . "</a>";
+	} else {
+		$licenses_array[$id]['cc'] = '© ' . $licenses_array[$id]['name'] ;	
 	}
 
 }
@@ -55,6 +58,7 @@ foreach ($licenses_xml->licenses->{'license'} as $license ) {
 $response = '';
 $xml = '';
 $photos = null;
+$CreativeCommonsLicense = null;
 
 if ( $getFavs ) {
 	print " ==== $user_id \n";
@@ -75,14 +79,22 @@ foreach ($photos  as $photo) {
 	$response = $api->executeMethod('flickr.photos.getSizes', array('photo_id'=> $photo{'id'}));
 	$sizes_xml = simplexml_load_string($response);
 
+#	print_r ($sizes_xml);
+	
 	$url = (string)$photo_xml->photo->urls->url;
 	$owner_url = "https://www.flickr.com/people/" . $photo_xml->photo->owner{'nsid'};
 	$owner_username = (string)$photo_xml->photo->owner{'username'};
 	$title = (string)$photo_xml->photo->{'title'};
 	$d = (string)$photo_xml->photo->{'description'};
 	$license = (int)$photo_xml->photo{'license'};
+#	print_r ( $photo_xml );
 	
-	if  ( ($license == 0) || ($license == 8) || ($license == 7) ) { continue; }
+
+	if  ( ($license == 0) || ($license == 8) || ($license == 7) ) { 
+		$CreativeCommonsLicense = false; 
+	} else { 
+		$CreativeCommonsLicense = true; 
+	}
 
 	$sizes_array = array ();
 	
@@ -93,14 +105,16 @@ foreach ($photos  as $photo) {
 		$sizes_array{$l}{'url'} = (string)$size{'source'};
 		$sizes_array{$l}{'width2'} = (int) ((int)$size{'width'} * 1.1 );
 		$sizes_array{$l}{'height'} = (int)$size{'height'};
-		$sizes_array{$l}{'height2'} = (int)((int)$size{'height'} * 1.3);
+		$sizes_array{$l}{'height2'} = (int)((int)$size{'height'} * 1.1);
 	
 	}
 	
-?>
 
-<div class="flickrrow" style="height: <?= $sizes_array['Medium']['height2'] ?>;">
-	<div class="flickrimg" style="width: <?= $sizes_array['Medium']['width2'] ?>;">
+
+if ( $CreativeCommonsLicense ) {
+?>
+<div class="flickrrow" style="height: <?= $sizes_array['Medium']['height2'] ?>px;">
+	<div class="flickrimg" style="width: <?= $sizes_array['Medium']['width2'] ?>px;">
 		<a target="_blank" href="<?= $url ?>"><img src="<?= $sizes_array['Medium']['url'] ?>" alt="<?= $title ." by " . $owner_username ?>" /></a>		
 	</div>
 	<div>
@@ -112,8 +126,22 @@ foreach ($photos  as $photo) {
 </div>
 <div>&nbsp;</div>
 
+<?php
+} else {
+?>
+<div class="flickrrow" style="height: <?= $sizes_array['Square']['height'] ?>px;">
+	<div>
+		<div class="flickrtitle"><a target="_blank" href="<?= $url ?>"><?= $title ?></a> by <a target="_blank" href="<?= $owner_url ?>"><?= $owner_username ?></a></div>
+		<div class="flickrcredit"><?= $licenses_array[$license]['cc']  ?>, please view the image on Flickr</div>
+	</div>	
+	<div style="clear: both">&nbsp;</div>
+</div>
+<div>&nbsp;</div>
+
 
 <?php
-}
+} # if Creative Commons 
+
+} # foreach photos
 
 ?>
