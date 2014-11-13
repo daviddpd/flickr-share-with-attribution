@@ -1,24 +1,49 @@
 <?php
 
+
+function hasTags($photoTags, $tags) {
+	$retval =  1;
+	print_r ( $photoTags, $tags );
+	
+	$ta = explode (",", $tags);
+	foreach ( $ta as $t  ){
+		$retval = $retval && in_array($t,$photoTags );
+	}
+	
+	return $retval;
+
+}
+
+
 $getFavs = 0;
 $getSinglePhoto = 0;
 $cid = -1;
 $user_id = '';
 
-if ($argc == 3 && in_array($argv[1], array('--id', '-id', ))) {
+
+$longopts  = array(
+    "tags:",     // Required value
+    "id:",     // Required value
+    "user:",     // Required value
+    "urls",           // No value
+);
+
+$options = getopt("", $longopts);
+#print_r($options);
+
+if ( isset ($options['id']) ) {
 	$getSinglePhoto = 1;
-	$cid = $argv[2];
-} elseif ($argc == 3 && in_array($argv[1], array('--user', '-user', ))) {
-
+	$cid = $options['id'];
+} elseif ( isset ($options['user']) ) {
 	$getFavs = 1;
-	$user_id = $argv[2];
-
+	$user_id = $options['user'];
 } else {
 
 	print "usage --id or --user required\n";
 	exit;
 
 }
+
 
 require_once 'Phlickr/Api.php';
 if ( is_file ("flickr-apikey.php") ) {
@@ -48,7 +73,7 @@ foreach ($licenses_xml->licenses->{'license'} as $license ) {
 	
 	if ( preg_match ( '/creativecommons/', $licenses_array[$id]['url']  )  ) {
 		$a = explode  ( '/',  $licenses_array[$id]['url'] );
-		$licenses_array[$id]['cc'] = '<a href="' . $licenses_array[$id]['url'] . '">CC ' .  strtoupper ( $a[4] . " " . $a[5] ) . "</a>";
+		$licenses_array[$id]['cc'] = '<a target="_blank" href="' . $licenses_array[$id]['url'] . '">CC ' .  strtoupper ( $a[4] . " " . $a[5] ) . "</a>";
 	} else {
 		$licenses_array[$id]['cc'] = '© ' . $licenses_array[$id]['name'] ;	
 	}
@@ -59,6 +84,7 @@ $response = '';
 $xml = '';
 $photos = null;
 $CreativeCommonsLicense = null;
+$urls = array();
 
 if ( $getFavs ) {
 	print " ==== $user_id \n";
@@ -87,7 +113,7 @@ foreach ($photos  as $photo) {
 	$title = (string)$photo_xml->photo->{'title'};
 	$d = (string)$photo_xml->photo->{'description'};
 	$license = (int)$photo_xml->photo{'license'};
-#	print_r ( $photo_xml );
+	#print_r ( $photo_xml );
 	
 
 	if  ( ($license == 0) || ($license == 8) || ($license == 7) ) { 
@@ -108,9 +134,29 @@ foreach ($photos  as $photo) {
 		$sizes_array{$l}{'height2'} = (int)((int)$size{'height'} * 1.1);
 	
 	}
+
+	$filterByTags = 1;
+	if ( isset ( $options['tags']) ) {
+		if ( hasTags( (array)$photo_xml->photo->tags->tag,  $options['tags']) ) {
+			$filterByTags = 1;
+		} else {
+			$filterByTags = 0;
+		}
+	}
 	
-
-
+	
+	if ( isset ( $options['urls'] ) ) {		
+		if ($filterByTags) {
+			print $url . "\n";
+		}
+} else {
+	
+echo "<!-- \n";
+echo "##########################################################################################\n";
+echo "# " . $photo{'id'} . " " . $photo_xml->photo->owner{'nsid'} . " " . $owner_username . " \n" ;
+echo "# $title\n";
+echo "##########################################################################################\n";
+echo "-->\n";
 if ( $CreativeCommonsLicense ) {
 ?>
 <div class="flickrrow" style="height: <?= $sizes_array['Medium']['height2'] ?>px;">
@@ -137,11 +183,16 @@ if ( $CreativeCommonsLicense ) {
 	<div style="clear: both">&nbsp;</div>
 </div>
 <div>&nbsp;</div>
-
-
 <?php
 } # if Creative Commons 
 
+}
+
 } # foreach photos
 
+
+
 ?>
+
+<!-- ######################################################################################### -->
+
