@@ -3,7 +3,10 @@
 
 function hasTags($photoTags, $tags) {
 	$retval =  1;
-	print_r ( $photoTags, $tags );
+
+#	print_r ( $photoTags );
+#	print_r ( $tags );
+#	echo "\n";
 	
 	$ta = explode (",", $tags);
 	foreach ( $ta as $t  ){
@@ -21,15 +24,18 @@ $cid = -1;
 $user_id = '';
 
 
+
 $longopts  = array(
     "tags:",     // Required value
     "id:",     // Required value
     "user:",     // Required value
     "urls",           // No value
+    "ignorecopyright", // ignore copy
+    "debug", // debug
 );
 
 $options = getopt("", $longopts);
-#print_r($options);
+print_r($options);
 
 if ( isset ($options['id']) ) {
 	$getSinglePhoto = 1;
@@ -116,7 +122,7 @@ foreach ($photos  as $photo) {
 	#print_r ( $photo_xml );
 	
 
-	if  ( ($license == 0) || ($license == 8) || ($license == 7) ) { 
+	if  (   ($license == 0) || ($license == 8) || ($license == 7)  ) { 
 		$CreativeCommonsLicense = false; 
 	} else { 
 		$CreativeCommonsLicense = true; 
@@ -129,11 +135,14 @@ foreach ($photos  as $photo) {
 		if ( isset ( $sizes_array{$l}{'url'} ) ) { continue; }
 		
 		$sizes_array{$l}{'url'} = (string)$size{'source'};
+		$sizes_array{$l}{'width'} = (int)$size{'width'};
 		$sizes_array{$l}{'width2'} = (int) ((int)$size{'width'} * 1.1 );
 		$sizes_array{$l}{'height'} = (int)$size{'height'};
 		$sizes_array{$l}{'height2'} = (int)((int)$size{'height'} * 1.1);
+		$sizes_array{$l}{'height3'} = (int)((int)$size{'height'} * 1.2);
 	
 	}
+
 
 	$filterByTags = 1;
 	if ( isset ( $options['tags']) ) {
@@ -141,22 +150,28 @@ foreach ($photos  as $photo) {
 			$filterByTags = 1;
 		} else {
 			$filterByTags = 0;
+			continue;
 		}
 	}
+
 	
-	
-	if ( isset ( $options['urls'] ) ) {		
-		if ($filterByTags) {
-			print $url . "\n";
-		}
-} else {
-	
-echo "<!-- \n";
-echo "##########################################################################################\n";
-echo "# " . $photo{'id'} . " " . $photo_xml->photo->owner{'nsid'} . " " . $owner_username . " \n" ;
-echo "# $title\n";
-echo "##########################################################################################\n";
-echo "-->\n";
+ob_start();
+
+?>
+
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8">
+	<title><?= "# " . $photo{'id'} . " " . $photo_xml->photo->owner{'nsid'} . " " . $owner_username ?></title>
+	<link rel="stylesheet" href="/flickriframes/style.css" type="text/css" media="all">
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.18.1/build/cssreset/cssreset.css" type="text/css">
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.18.1/build/cssfonts/cssfonts.css" type="text/css">
+    <link rel="stylesheet" href="http://yui.yahooapis.com/3.18.1/build/cssbase/cssbase.css" type="text/css">
+
+</head>
+<body>
+
+<?php
 if ( $CreativeCommonsLicense ) {
 ?>
 <div class="flickrrow" style="height: <?= $sizes_array['Medium']['height2'] ?>px;">
@@ -175,24 +190,70 @@ if ( $CreativeCommonsLicense ) {
 <?php
 } else {
 ?>
-<div class="flickrrow" style="height: <?= $sizes_array['Square']['height'] ?>px;">
+<div class="flickrrow" style="height: <?= $sizes_array['Medium']['height2'] ?>px;">
+	<div class="flickrimg" style="width: <?= $sizes_array['Medium']['width2'] ?>px;">
+
+<?php 
+	if ( isset ($options['ignorecopyright']) ) {
+?>
+	<a target="_blank" href="<?= $url ?>"><img src="<?= $sizes_array['Medium']['url'] ?>" alt="<?= $title ." by " . $owner_username ?>" /></a>
+<?php
+	} else {
+?>
+	<img src="/flickriframes/1x1.gif" alt="<?= $title ." by " . $owner_username ?>"  height="<?= $sizes_array['Medium']['height'] ?>px" width="<?= $sizes_array['Medium']['width'] ?>px" />
+<?php
+	}
+?>
+	</div>
 	<div>
 		<div class="flickrtitle"><a target="_blank" href="<?= $url ?>"><?= $title ?></a> by <a target="_blank" href="<?= $owner_url ?>"><?= $owner_username ?></a></div>
+
+<?php 
+	if ( isset ($options['ignorecopyright']) ) {
+?>
+		<div class="flickrcredit"><?= $licenses_array[$license]['cc']  ?></div>
+<?php
+	} else {
+?>
 		<div class="flickrcredit"><?= $licenses_array[$license]['cc']  ?>, please view the image on Flickr</div>
+<?php
+	}
+?>
+
+		<div class="flickrdesc"><?= $d ?></div>
 	</div>	
 	<div style="clear: both">&nbsp;</div>
 </div>
 <div>&nbsp;</div>
+
+<!-- ######################################################################################### -->
+</body>
+
 <?php
+echo "<!-- \n";
+echo "##########################################################################################\n";
+echo "# " . $photo{'id'} . " " . $photo_xml->photo->owner{'nsid'} . " " . $owner_username . " \n" ;
+echo "# $title\n";
+echo "##########################################################################################\n";
+echo "-->\n";
+echo "</html>\n";
+
+
 } # if Creative Commons 
 
-}
+$page = ob_get_contents();
+ob_end_clean();
+$file = "flickriframes/" . $photo{'id'} . ".html";
+@chmod($file,0666);
+$fw = fopen($file, "w");
+fputs($fw,$page, strlen($page));
+fclose($fw);
+
+echo "<iframe height=\"" . $sizes_array['Medium']['height3'] . "px\" width=\"100%\" scrolling=\"no\" noresize=\"\" src=\"/$file\"></iframe>\n";
+
 
 } # foreach photos
 
 
 
 ?>
-
-<!-- ######################################################################################### -->
-
