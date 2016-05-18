@@ -101,7 +101,7 @@ if ( $getFavs ) {
 
 if ( $getSinglePhoto ) {
 	$photos = array ();
-	$photos[0] = array  ( id => $cid );
+	$photos[0] = array  ( 'id' => $cid );
 }
 
 foreach ($photos  as $photo) {
@@ -118,6 +118,12 @@ foreach ($photos  as $photo) {
 	$owner_username = (string)$photo_xml->photo->owner{'username'};
 	$title = (string)$photo_xml->photo->{'title'};
 	$d = (string)$photo_xml->photo->{'description'};
+	
+	$d = str_replace ( array ( "\r", "\n" ), array ( "<br />\r", "<br />\n" ) , $d );
+	
+	$d = str_replace ( array ( "<a" ), array ( "<a target=\"_blank\"" ) , $d );
+	
+	
 	$license = (int)$photo_xml->photo{'license'};
 	#print_r ( $photo_xml );
 	
@@ -138,7 +144,7 @@ foreach ($photos  as $photo) {
 		$sizes_array{$l}{'width'} = (int)$size{'width'};
 		$sizes_array{$l}{'width2'} = (int) ((int)$size{'width'} * 1.1 );
 		$sizes_array{$l}{'height'} = (int)$size{'height'};
-		$sizes_array{$l}{'height2'} = (int)((int)$size{'height'} * 1.1);
+		$sizes_array{$l}{'height2'} = (int)((int)$size{'height'} * 1.2);
 		$sizes_array{$l}{'height3'} = (int)((int)$size{'height'} * 1.2);
 	
 	}
@@ -219,13 +225,9 @@ if ( $CreativeCommonsLicense ) {
 <?php
 	}
 ?>
-
 		<div class="flickrdesc"><?= $d ?></div>
 	</div>	
-	<div style="clear: both">&nbsp;</div>
 </div>
-<div>&nbsp;</div>
-
 <!-- ######################################################################################### -->
 </body>
 
@@ -249,7 +251,7 @@ $fw = fopen($file, "w");
 fputs($fw,$page, strlen($page));
 fclose($fw);
 
-echo "<iframe height=\"" . $sizes_array['Medium']['height3'] . "px\" width=\"100%\" scrolling=\"no\" noresize=\"\" src=\"/$file\"></iframe>\n";
+echo "<iframe height=\"" . $sizes_array['Medium']['height2'] . "px\" width=\"100%\" scrolling=\"no\" noresize=\"\" src=\"/$file\"></iframe>\n";
 
 
 } # foreach photos
